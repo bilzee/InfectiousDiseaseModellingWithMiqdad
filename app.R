@@ -43,14 +43,20 @@ ui = fluidPage(
                         "Time step in the model (dt):",
                         min = 0,
                         max = 5,
-                        value = 1,
+                        value = 0.1,
                         step = 0.1),
             numericInput("days",
                         "Number of days to run model for:",
                         min = 10,
                         max = 1000,
-                        value = 100,
-                        step = 10)
+                        value = 150,
+                        step = 10),
+            tags$div(
+                HTML("<small><small>
+         <p>This site was produced by <a href='http://www.lse.ac.uk/lse-health/people/miqdad-asaria'>Miqdad Asaria</a> 
+         <p>Source code can be found <a href='https://github.com/miqdadasaria/infectious_disease_modelling'>here</a>.
+         </small></small>")
+            )
         ),
 
         mainPanel(
