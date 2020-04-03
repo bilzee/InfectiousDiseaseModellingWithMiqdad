@@ -1,13 +1,13 @@
-############################################################################################
+####################################################################################################
 # Simple SEIR model implementation
 #
 # Miqdad Asaria
 # April 2020
-############################################################################################
+###################################################################################################
 
 library("tidyverse")
 
-############################################################################################
+##################################################################################################
 # Function to simulate simple SEIR model
 #
 # N = population
@@ -16,7 +16,7 @@ library("tidyverse")
 # D = average duration of infectious period (days)
 # delta_t = time step of model (days)
 # times = how many time steps to run the model for
-############################################################################################
+##################################################################################################
 simulate_SEIR = function(N = 100000, R0 = 2.2, D = 2.9, D_pre = 5.2, delta_t = 0.1, days = 100) {
   # start by using inputs to calculate key model prameters
   f = delta_t / D_pre
@@ -66,7 +66,7 @@ simulate_SEIR = function(N = 100000, R0 = 2.2, D = 2.9, D_pre = 5.2, delta_t = 0
     HIT_date = NA
   }
   
-  # reshape the data into long form for plotting
+  # reshape the data into tidy form for plotting
   graph_data = markov_trace %>%
     gather("state", "population", c("S","E","I","R")) %>%
     mutate(state = factor(state, 
@@ -77,13 +77,13 @@ simulate_SEIR = function(N = 100000, R0 = 2.2, D = 2.9, D_pre = 5.2, delta_t = 0
   seir_plot = ggplot(graph_data, aes(x=time, y=population, group=state)) +
     xlab("Time (days since first case)") +
     ylab("Number of people") +
-    geom_line(aes(colour=state, linetype=state)) +
+    geom_line(aes(colour=state, linetype=state), size=1) +
     labs(title = "Simple infectious disease model",
          subtitle = bquote("Input parameters:" ~ R[0] ~ " = " ~ .(R0) ~ ", D' = " ~ .(D_pre) ~ ", D = " ~ .(D) ~ ", " ~ delta*t ~ " = " ~ .(delta_t) ~ ", N = " ~ .(N) ~ " Derived parameters: " ~ beta ~ " = " ~ .(beta) ~ ", f = " ~ .(f) ~ ", r = " ~ .(r)),
          caption = paste0("Herd immunity threshold of ", round(100*HIT) ,"%",ifelse(is.na(HIT_date)," not achieved in this simulation", paste0(" achieved after ",HIT_date," days")))) +
     scale_colour_manual(name="States", values=c("red","orange","blue","green")) +
     scale_linetype_manual(name="States", values=c(1,2,1,1)) +
-    theme_bw() + 
+    theme_bw(base_size = 10) + 
     theme(panel.grid.major = element_blank(), 
           panel.grid.minor = element_blank(), 
           plot.margin = unit(c(1, 1, 1, 1), "lines"),
