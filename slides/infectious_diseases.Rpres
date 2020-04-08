@@ -21,7 +21,7 @@ incremental: true
 - We will familiarise with the key jargon of infectious disease models
 - We will build a simple SEIR model in R
 - We will estimate the parameters for this model using emerging covid-19 data
-- We will use the model to derive key results around how we expect the epidemic to evlove
+- We will use the model to derive key results around how we expect the epidemic to evolve
 - We will use the model to explore the impacts of possible policy responses 
 
 Summary of key definitions
@@ -38,7 +38,7 @@ type: section
 
 R0 - the basic reproductive number
 ========================================================
-
+incremental: true
  - Number of people each infected person will infect overall
  - $R_{0}$ is the number of people infected when everyone is susceptible
  - Once some people become immune due to recovery or vaccince reporductive number falls to $R_{n}$
@@ -47,6 +47,7 @@ R0 - the basic reproductive number
 
 R0 - the basic reproductive number
 ========================================================
+incremental: true
 ![r0](figures/r0.png)
  <small><small><small><small>
  Source: Fine P E. Herd immunity: history, theory, practice. *Empidemiol Rev* 1993; 15(2):265-302
@@ -61,7 +62,8 @@ R0 - the basic reproductive number
  
 Herd immunity threshold
 ========================================================
- ```{r, echo=FALSE}
+incremental: true
+```{r, echo=FALSE}
 source("../HIT.R")
 plot_HIT()
 ```
@@ -101,15 +103,14 @@ type: section
 The SEIR Model equations
 ========================================================
 incremental: true
-![seir](seir.png)
+![seir](figures/seir.png)
 - $S_{t+1} = S_{t} - \lambda_{t}S_{t}$
 - $E_{t+1} = E_{t} + \lambda_{t}S_{t} - fE_{t}$
 - $I_{t+1} = I_{t} + fE_{t} - rI_{t}$
 - $R_{t+1} = R_{t} + rI_{t}$
 - $\lambda_{t} = \beta I_{t}$
 - $\beta = \frac{R_{0}}{ND}$
-- $N$ = population size
-- $D$ = duration of infectious period
+- $N$ = population size and $D$ = duration of infectious period
 
 More about the risk of infection 
 ========================================================
@@ -383,11 +384,9 @@ class: small-code
 incremental: true
 ```{r, eval=TRUE}
 cases = lm(log(cases)~days, data=uk_data)
-
 summary(cases)
 
 growth_rate_cases = coef(cases)[["days"]]
-
 growth_rate_cases
 ```
 
@@ -397,11 +396,9 @@ class: small-code
 incremental: true
 ```{r, eval=TRUE}
 deaths = lm(log(deaths)~days, data=uk_data)
-
 summary(deaths)
 
 growth_rate_deaths = coef(deaths)[["days"]]
-
 growth_rate_deaths
 ```
 

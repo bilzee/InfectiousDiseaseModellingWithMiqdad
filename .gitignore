@@ -40,3 +40,12 @@ vignettes/*.pdf
 
 # RStudio files
 *.Rproj
+.DS_Store
+
+# html slides
+slides/infectious_diseases-figure
+refs/
+slides/.DS_Store
+slides/infectious_diseases.md
+slides/infectious_diseases.html
+
