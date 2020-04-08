@@ -1,0 +1,472 @@
+```{r, echo=FALSE}
+library("tidyverse")
+library("lubridate")
+```
+<style>
+.small-code pre code {
+  font-size: 1em;
+}
+</style>
+
+Introduction to modelling infectious diseases
+========================================================
+author: Miqdad Asaria
+date: April 2020
+autosize: true
+
+
+A quick introduction to infectious disease modelling with examples in R
+========================================================
+incremental: true
+- We will familiarise with the key jargon of infectious disease models
+- We will build a simple SEIR model in R
+- We will estimate the parameters for this model using emerging covid-19 data
+- We will use the model to derive key results around how we expect the epidemic to evlove
+- We will use the model to explore the impacts of possible policy responses 
+
+Summary of key definitions
+========================================================
+
+![defintions](figures/id_time_desc.png)
+ <small><small><small><small>
+ Source: Fine P E. The interval between succesive cases of an infectious disease. *Am J Empidemiol* 2003; 158(11):1039-1047
+</small></small></small></small>
+
+R0 and the herd immunity threshold
+========================================================
+type: section
+
+R0 - the basic reproductive number
+========================================================
+
+ - Number of people each infected person will infect overall
+ - $R_{0}$ is the number of people infected when everyone is susceptible
+ - Once some people become immune due to recovery or vaccince reporductive number falls to $R_{n}$
+ - If $s$ is the proportion of population susceptible
+ - $R_{n} = s * R_{0}$
+
+R0 - the basic reproductive number
+========================================================
+![r0](figures/r0.png)
+ <small><small><small><small>
+ Source: Fine P E. Herd immunity: history, theory, practice. *Empidemiol Rev* 1993; 15(2):265-302
+</small></small></small></small>
+
+***
+ - Average number of people each infected person will in turn infect
+ - $R_{0}$ is the number of people infected when everyone is susceptible
+ - As some people become immune due to recovery or vaccince reproductive number falls to $R_{n}$
+ - If $s$ is the proportion of population susceptible
+ - $R_{n} = s * R_{0}$
+ 
+Herd immunity threshold
+========================================================
+ ```{r, echo=FALSE}
+source("../HIT.R")
+plot_HIT()
+```
+***
+ - As the proportion of population susceptible drops $R_{n}$ decreases
+ - When $R_{n}$ falls below $1$ then each infected person infects less than $1$ susceptible person
+ - At this point the numbers of people infected begins to fall - we have reached herd immunity
+ - Herd immunity 
+ <small>
+ $$
+ R_{n} = s * R_{0} \leq 1 \implies s \leq \frac{1}{R_{0}} \\
+ \implies 1-s \geq 1 - \frac{1}{R_{0}} = \frac{R_{0}-1}{R_{0}}
+ $$
+</small>
+
+Caclulating herd immunity threshold in R
+========================================================
+incremental: true
+Here is a simple function to calculate the herd immunity threshold
+
+```{r, eval=FALSE}
+calculate_HIT = function(R0){
+  HIT = ((R0 - 1) / R0)
+  return(HIT)
+}
+```
+
+We can try running this with a $R_{0}$ value of 3 
+```{r, eval=TRUE}
+calculate_HIT(R0 = 3)
+```
+
+The susceptible, pre-infectious, infectious, immune (SEIR) model
+========================================================
+type: section
+
+The SEIR Model equations
+========================================================
+incremental: true
+![seir](seir.png)
+- $S_{t+1} = S_{t} - \lambda_{t}S_{t}$
+- $E_{t+1} = E_{t} + \lambda_{t}S_{t} - fE_{t}$
+- $I_{t+1} = I_{t} + fE_{t} - rI_{t}$
+- $R_{t+1} = R_{t} + rI_{t}$
+- $\lambda_{t} = \beta I_{t}$
+- $\beta = \frac{R_{0}}{ND}$
+- $N$ = population size
+- $D$ = duration of infectious period
+
+More about the risk of infection 
+========================================================
+incremental: true
+- $\lambda_{t}$ is the risk or force of infection
+- $\lambda_{t} = \beta I_{t}$
+- $\beta$ is the per capita number of effective contacts made by an individual per unit time 
+- $R_{0} = \beta N D$
+- The number of people you infect overall = per capita effective contacts per unit time * population * duration of infectious period
+- $c_{e}$ is the number of effective contacts made by infectious person per unit time
+- $c_{e} = \frac{R_{0}}{D}$
+- $\frac{c_{e}}{N} = \frac{R_{0}}{ND} = \beta$
+
+What happens when the population doubles
+========================================================
+incremental: true
+- Case 1: city boundary expands and risk of infection stays the same (frequency dependence)
+- $\lambda_{t} = \frac{c_{e}I_{t}}{N} = \frac{c_{e}2I_{t}}{2N}$
+- So $c_{e}$ has not changed therefore $\beta$ has decreased by half
+- Case 2: city boundary stays the same risk of infection increases (density dependence)
+- $\lambda_{t} = \frac{c_{e}I_{t}}{N} \lt \frac{c'_{e}2I_{t}}{2N}$
+- In this case $\beta$ stays the same so $c'_{e} \gt c_{e}$
+- $\beta = \frac{c_{e}}{N} = \frac{R_{0}}{ND} = \frac{c'_{e}}{2N} = \frac{R'_{0}}{2ND}$
+- Therefore $R'_{0} = 2R_{0}$ each infected person now infects double as many people as before
+
+What about the other parameters f and r 
+========================================================
+incremental: true
+- We assume constant rates of becoming infectious and recovering
+- We can then use: 
+- rate at which something occurs = 1 / average time to event
+- $f = \frac{1}{D'}$ 
+- where D' is average duration of pre-infectious period
+- $r = \frac{1}{D}$ 
+- where D is average duration of infectious period
+
+The SEIR model implemented in R (1/4)
+========================================================
+class: small-code
+The following model inputs are required
+
+```{r, eval=FALSE}
+###############################################
+# Function to simulate simple SEIR model
+#
+# N = population
+# R0 = basic reproductive number
+# D_pre = average duration of pre-infectious period (days)
+# D = average duration of infectious period (days)
+# delta_t = time step of model (days)
+# days = how many days to run the model for
+###############################################
+
+SEIR_model = function(N, R0, D_pre, D, delta_t, days)
+```
+
+The SEIR model implemented in R (2/4)
+========================================================
+Calculate key model parameters from model inputs
+
+```{r, eval=FALSE}
+  f = delta_t / D_pre
+  r = delta_t / D
+  beta = (R0 * r) / N 
+  iterations = round(days/delta_t)
+```
+
+The SEIR model implemented in R (3/4)
+========================================================
+Initialise model states
+
+```{r, eval=FALSE}
+  # intial population in each state at time 0
+  results[1,"time"] = 0
+  results[1,"S"] = N-1
+  results[1,"E"] = 1
+  results[1,"I"] = 0
+  results[1,"R"] = 0
+```
+
+The SEIR model implemented in R (4/4)
+========================================================
+class: small-code
+Iterate over difference equations to run model
+
+ ```{r, eval=FALSE}
+ for (t in 2:iterations) {
+    # populations in each state in 
+    # previous iteration
+    time = results[t-1,"time"]
+    S = results[t-1,"S"]
+    E = results[t-1,"E"]
+    I = results[t-1,"I"]
+    R = results[t-1,"R"]
+    
+    # apply difference equations formulas to 
+    # calculate new populations in each state
+    results[t,"time"] = time + delta_t
+    results[t,"S"] = S - (beta*I* S)
+    results[t,"E"] = E + (beta*I*S) - (f*E)   
+    results[t,"I"] = I + (f*E) - (r*I) 
+    results[t,"R"] = R + (r*I) 
+ }
+```
+SEIR model results
+========================================================
+incremental: true
+ 
+ ```{r, echo=FALSE}
+source("../seir.R")
+seir = simulate_SEIR()
+seir$seir_plot
+```
+***
+ ```{r, echo=FALSE}
+seir = simulate_SEIR(R0=3)
+seir$seir_plot
+```
+
+Testing
+========================================================
+type: section
+
+What about testing
+========================================================
+incremental: true
+ If we know the sensitivity and specificity of a test and know disease prevalence we can work out
+ <small>
+ - True positives = prevalence * sensitivity
+ - False negative = prevalence * (1 - sensitivity)
+ - TrueNegative = (1 - prevalence) * specificity
+ - FalsePositive = (1 - prevalence) * (1 - specificity)
+ - Positive Predictive Value = True Positive / (True Positive + False Positive)
+ - Negative Predictive Value = True Negative / (True Negative + False Negative)
+ </small>
+ 
+ Test characterisitics in R code
+========================================================
+class: small-code
+```{r, eval=TRUE}
+calculate_TP = function(prevalence, sensitivity){
+        TP = prevalence * sensitivity
+        return(TP)
+}
+
+calculate_FN = function(prevalence, sensitivity){
+        FN = prevalence * (1 - sensitivity)
+        return(FN)
+}
+
+calculate_TN = function(prevalence, specificity){
+        TN = (1 - prevalence) * specificity
+        return(TN)
+}
+
+calculate_FP = function(prevalence, specificity){
+        FP = (1 - prevalence) * (1 - specificity)
+        return(FP)
+}
+
+```
+
+Positive Predictive Value and Negative Predictive Value in R code
+========================================================
+class: small-code
+
+```{r, eval=TRUE}
+calculate_PPV = function(prevalence, sensitivity, specificity){
+        TP = calculate_TP(prevalence, sensitivity)
+        FP = calculate_FP(prevalence, specificity)
+        PPV = TP / (TP + FP)
+        return(round(PPV * 100,1))
+}
+```
+
+```{r, eval=TRUE}
+calculate_NPV = function(prevalence, sensitivity, specificity){
+        TN = calculate_TN(prevalence, specificity)
+        FN = calculate_FP(prevalence, sensitivity)
+        NPV = TN / (TN + FN)
+        return(round(NPV * 100, 1))
+}
+```
+
+Example test calculations
+========================================================
+class: small-code
+incremental: true
+Let us try these out with for a test with a sensitivity of 95% and a specificity of 90% and a disease prevalence of 3%
+
+```{r, eval=TRUE}
+calculate_PPV(prevalence = 0.03, sensitivity = 0.95, specificity = 0.90)
+
+calculate_NPV(prevalence = 0.03, sensitivity = 0.95, specificity = 0.90)
+```
+
+How does test performance change with disease prevalence
+========================================================
+incremental: true
+```{r, echo=FALSE}
+source("../test.R")
+calculate_test_ppv_npv(sensitivity = 0.95, specificity = 0.90, max_prevalence = 1)
+```
+***
+```{r, echo=FALSE}
+calculate_test_ppv_npv(sensitivity = 0.95, specificity = 0.90, max_prevalence = 0.05)
+```
+
+More on R0
+========================================================
+type: section
+
+The growth rate of the epidemic
+========================================================
+incremental: true
+- $I(t) = I(0) exp^{\Lambda t}$
+- $ln(I(t)) = ln(I(0) + \Lambda t$
+- $\Lambda$ is the growth rate
+- The gradient of the plot of the log of the number of cases against time
+ 
+The growth rate of the epidemic in R
+========================================================
+class: small-code
+incremental: true
+Download country case and death data from ECDC 
+```{r, eval=TRUE}
+data = read_csv(
+  "https://opendata.ecdc.europa.eu/covid19/casedistribution/csv"
+  )
+```
+
+Process data for analysis
+- extract data for the UK
+- start when we see the first death in the data
+- calculate number of days since this first death
+```{r, eval=TRUE}
+uk_data = data %>% 
+  filter(geoId=="UK" & deaths>0) %>% 
+  select(dateRep, cases, deaths) %>%
+  mutate(report_date = dmy(dateRep), 
+         days = as.numeric(report_date-min(report_date)))
+```
+
+Plots to show growth rates of cases and deaths
+========================================================
+```{r, echo=FALSE}
+ggplot(data=uk_data, aes(x=days, y=log(cases))) +
+  geom_point() +
+  geom_smooth(method='lm') +
+  ggtitle("Rate of growth of cases") +
+  xlab("Days since first death") +
+  ylab("ln(number of cases)") + 
+  theme_bw(base_size = 15) + 
+  theme(plot.margin = unit(c(1, 1, 1, 1), "lines"))
+```
+***
+```{r, echo=FALSE}
+ggplot(data=uk_data, aes(x=days, y=log(deaths))) +
+  geom_point() +
+  geom_smooth(method='lm') +
+  ggtitle("Rate of growth of deaths") +
+  xlab("Days since first death") +
+  ylab("ln(number of cases)") + 
+  theme_bw(base_size = 15) + 
+  theme(plot.margin = unit(c(1, 1, 1, 1), "lines"))
+```
+
+The growth rate of cases using regression
+========================================================
+class: small-code
+incremental: true
+```{r, eval=TRUE}
+cases = lm(log(cases)~days, data=uk_data)
+
+summary(cases)
+
+growth_rate_cases = coef(cases)[["days"]]
+
+growth_rate_cases
+```
+
+The growth rate of deaths using regression
+========================================================
+class: small-code
+incremental: true
+```{r, eval=TRUE}
+deaths = lm(log(deaths)~days, data=uk_data)
+
+summary(deaths)
+
+growth_rate_deaths = coef(deaths)[["days"]]
+
+growth_rate_deaths
+```
+
+Estimating R0
+========================================================
+class: small-code
+incremental: true
+- $\frac{dI}{dt} = \beta S(t) I(t) - r I(t)$
+- at the start everybody is susceptible $S(t) = N$
+- $\frac{dI}{dt} = \beta N I(t) - r I(t) = (\beta N - r) I(t)$
+- $\Lambda = (\beta N - r)$ is the growth rate
+- $R_{0} = \frac{\beta N}{r} \implies \Lambda = r (R_{0} - 1)$
+- $D = \frac{1}{r} \implies r = \frac{1}{D} \implies \Lambda = \frac{R_{0} - 1}{D}$
+- $R_{0} = 1 + \Lambda D$ when $D'$ is small
+- more generally gamma(m,n): $R_{0} = \frac{\Lambda D (\frac{\Lambda D'}{m} +1)^m}{(1-(\frac{\Lambda D}{n}+1)^{-n})}$ 
+- if m = n = 1 then simplifies to exponential: $R_{0} = (1 + \Lambda D)(1 + \Lambda D')$
+
+Estimating R0 - in R
+========================================================
+class: small-code
+incremental: true
+```{r, eval=TRUE}
+calculate_R0 = function(Lambda, D_pre=5.2, D=2.9, m=1, n=1){
+  #R0 = (1+Lambda*D)*(1+Lambda*D_pre) when m = n = 1
+  R0 = (Lambda*D*(1+(Lambda*D_pre/m)^m)) / (1-(1+(Lambda*D/n))^-n)
+  
+  return(R0)
+}
+
+calculate_R0(Lambda = growth_rate_cases)
+```
+
+How long does it take for the number of cases to double
+========================================================
+class: small-code
+incremental: true
+- If one case at time $t=0$ and then $I(0) = 1$
+- Then two cases at time $T_{d}$ means $I(T_{d})=2$
+- $ln(I(t)) = ln(I(0)) + \Lambda t$
+- $ln(2) = ln(1) + \Lambda T_{d}$
+- $T_{d} = \frac{ln(2)}{\Lambda}$
+
+```{r, eval=TRUE}
+Td = log(2)/growth_rate_cases
+
+paste0("Time for numbe of cases to double is ",round(Td,1), " days when growth rate is ", growth_rate_cases)
+```
+
+How many people will get the disease in the population
+========================================================
+class: small-code
+incremental: true
+
+- $R_{0} = \frac{ln(s_{f}) - ln(s_{0})}{s_{f} - s_{0}} \implies R_{0} - \frac{ln(s_{f}) - ln(s_{0})}{s_{f} - s_{0}} = 0$
+- $s_{0}$ is the proportion of population susceptible at start
+- $s_{f}$ is the proportion of population susceptible at end
+- if we assume $s_{0} = 1$ and $R_{0} = 3$ we can numerically solve for $s_{f}$
+```{r, echo=TRUE}
+solve_infected_individuals = function(R0, s0, sf){
+  residual = R0 - ((log(sf) - log(s0)) / (sf - s0))
+  return(residual)
+}
+
+sf = uniroot(solve_infected_individuals, R0=3, s0=1, interval=c(0,0.99))$root
+
+paste0(round(100*sf,1), "% of population susceptible at the end i.e. ", 
+       (round(100*(1-sf),1)), "% of population infected overall")
+```
