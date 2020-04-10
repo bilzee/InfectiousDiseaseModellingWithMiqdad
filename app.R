@@ -20,15 +20,21 @@ ui = fluidPage(
         sidebarPanel(
             numericInput("N",
                          "Population (N):",
-                         value = 100000, 
+                         value = 60000000, 
                          min = 1, 
                          max = NA, 
                          step = 1),
             numericInput("R0",
-                         "Basic reproductive number (R0):",
+                         HTML("Basic reproductive number (R<sub>0</sub>):"),
                          min = 0,
                          max = 20,
-                         value = 2.2, 
+                         value = 2.6, 
+                         step = 0.1),
+            numericInput("R1",
+                         HTML("Policy adjusted reproductive number (R<sub>1</sub>):"),
+                         min = 0,
+                         max = 20,
+                         value = 1.8, 
                          step = 0.1),
             numericInput("D_pre",
                         "Average duratiuon of pre-infectious period (D'):",
@@ -52,7 +58,7 @@ ui = fluidPage(
                         "Number of days to run model for:",
                         min = 10,
                         max = 1000,
-                        value = 150,
+                        value = 365,
                         step = 10),
             tags$hr(),
             sliderInput("sensitivity",
@@ -86,6 +92,7 @@ ui = fluidPage(
             tabsetPanel(id="tabset",
                         tabPanel("SEIR Plot", plotlyOutput("seir_plot"), 
                                  htmlOutput("summary")),
+                        tabPanel("The \"Curve\"", plotlyOutput("infection_plot")),
                         tabPanel("Markov Trace", div(dataTableOutput("seir_markov_trace"), style = "font-size:70%")),
                         tabPanel("HIT Plot", plotlyOutput("hit_plot")),
                         tabPanel("Test Plot", plotlyOutput("test_plot"))
@@ -107,6 +114,16 @@ server = function(input, output) {
     
     output$seir_plot = renderPlotly({
         ggplotly(seirModel()$seir_plot)
+    })
+    
+    output$infection_plot = renderPlotly({
+        ggplotly(simulate_infection_curve(input$N, 
+                                          input$R0,
+                                          input$R1, 
+                                          input$D, 
+                                          input$D_pre, 
+                                          input$delta_t, 
+                                          input$days))
     })
     
     output$seir_markov_trace = renderDataTable({

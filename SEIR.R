@@ -60,8 +60,8 @@ simulate_SEIR = function(N = 100000, R0 = 2.2, D = 2.9, D_pre = 5.2, delta_t = 0
   HIT = (R0-1)/R0
   
   # look at markov trace to see when herd immunity achieved if at all
-  if(markov_trace %>% filter(R>=HIT*N) %>% select(time) %>% nrow() > 0){
-    HIT_date = markov_trace %>% filter(R>=HIT*N) %>% select(time) %>% min() %>% round()
+  if(markov_trace %>% filter(S<=(1-HIT)*N) %>% select(time) %>% nrow() > 0){
+    HIT_date = markov_trace %>% filter(S<=(1-HIT)*N) %>% select(time) %>% min() %>% round()
   } else {
     HIT_date = NA
   }
@@ -94,5 +94,34 @@ simulate_SEIR = function(N = 100000, R0 = 2.2, D = 2.9, D_pre = 5.2, delta_t = 0
               "seir_plot"=seir_plot,
               "HIT"=HIT,
               "HIT_date"=HIT_date))
+}
+
+simulate_infection_curve = function(N = 100000, R0 = 2.2, R1 = 1.8, D = 2.9, D_pre = 5.2, delta_t = 0.1, days = 150){
+  original = simulate_SEIR (N , R0, D, D_pre, delta_t, days)
+  total_I_original = round(max(original$seir_markov_trace$Total_I))
+  original = original$seir_markov_trace %>% select(time, I) %>% mutate(state="original")
+  adjusted = simulate_SEIR (N , R1, D, D_pre, delta_t, days)
+  total_I_adjusted = round(max(adjusted$seir_markov_trace$Total_I))
+  adjusted = adjusted$seir_markov_trace %>% select(time, I) %>% mutate(state="adjusted")
+  
+  graph_data = bind_rows(original, adjusted) %>%
+    mutate(state = factor(state,c("original","adjusted"),c("Baseline infections","Adjusted infections")))
+ 
+  # plot the infection curve graph
+  infection_plot = ggplot(graph_data, aes(x=time, y=I, group=state)) +
+    xlab("Time (days since first case)") +
+    ylab("Number of people") +
+    geom_line(aes(colour=state, linetype=state), size=1) +
+    labs(title = paste0("Infected over time - total baseline: ",total_I_original,"; total adjusted: ", total_I_adjusted),
+         subtitle = paste0("R0 - baseline: ", R0, "; adjusted: ",R1 )) +
+    scale_colour_manual(name="States", values=c("blue","blue")) +
+    scale_linetype_manual(name="States", values=c(1,2)) +
+    theme_bw(base_size = 10) + 
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          plot.margin = unit(c(1, 1, 1, 1), "lines"),
+          legend.position = "bottom")
+  
+  return(infection_plot)
 }
 
