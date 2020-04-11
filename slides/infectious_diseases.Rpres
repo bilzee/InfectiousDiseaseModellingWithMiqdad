@@ -209,7 +209,7 @@ Iterate over difference equations to run model
     # apply difference equations formulas to 
     # calculate new populations in each state
     results[t,"time"] = time + delta_t
-    results[t,"S"] = S - (beta*I* S)
+    results[t,"S"] = S - (beta*I*S)
     results[t,"E"] = E + (beta*I*S) - (f*E)   
     results[t,"I"] = I + (f*E) - (r*I) 
     results[t,"R"] = R + (r*I) 
@@ -331,6 +331,31 @@ calculate_test_ppv_npv(sensitivity = 0.95, specificity = 0.90, max_prevalence = 
 calculate_test_ppv_npv(sensitivity = 0.95, specificity = 0.90, max_prevalence = 0.05)
 ```
 
+Differential equations
+========================================================
+type: section
+
+
+Exponential growth/decay
+========================================================
+- When we have exponential growth/decay (constant rate)
+- $\frac{dx}{dt} = k x(t)$
+- $\frac{1}{x(t)}dx = k dt$
+- $\int_{0}^{t} \frac{1}{x(t)}dx = \int_{0}^{t} k dt$
+- $\ln{x(t)} - \ln{x(0)} = k t$
+- $\ln{\frac{x(t)}{x(0)}} = k t$
+- $\frac{x(t)}{x(0)} = e^{kt}$
+- $x(t) = x(0) e^{kt}$
+
+SEIR model using differential equations
+========================================================
+incremental: true
+- $\frac{dS(t)}{dt} = -\lambda(t)S(t)$
+- $\frac{dE(t)}{dt} = \lambda(t)S(t) - fE(t)$
+- $\frac{dI(t)}{dt} = fE(t) - rI(t)$
+- $\frac{dR(t)}{dt} = rI(t)$
+
+
 More on R0
 ========================================================
 type: section
@@ -339,9 +364,13 @@ The growth rate of the epidemic
 ========================================================
 incremental: true
 - $I(t) = I(0) exp^{\Lambda t}$
-- $ln(I(t)) = ln(I(0) + \Lambda t$
+- $ln(I(t)) = ln(I(0)) + \Lambda t$
 - $\Lambda$ is the growth rate
 - The gradient of the plot of the log of the number of cases against time
+- $\Lambda = \frac{1}{t}(\ln{I(t)}-\ln{I(0)}) = \frac{1}{t} \ln{\frac{I(t)}{I(0)}}$ 
+- What if we are only recording 10% of the case
+- $\Lambda = \frac{1}{t} \ln{\frac{0.1 \times I(t)}{0.1 \times I(0)}} = \frac{1}{t} \ln{\frac{I(t)}{I(0)}}$
+- So does not matter if under recording cases so long as we are equally as bad/good over time this cancels out
  
 The growth rate of the epidemic in R
 ========================================================
@@ -456,7 +485,7 @@ incremental: true
 ```{r, eval=TRUE}
 Td = log(2)/growth_rate_cases
 
-paste0("Time for numbe of cases to double is ",round(Td,1), " days when growth rate is ", growth_rate_cases)
+paste0("Time for numbe of cases to double is ",round(Td,1), " days when growth rate is ", round(growth_rate_cases,3))
 ```
 
 How many people will get the disease in the population
