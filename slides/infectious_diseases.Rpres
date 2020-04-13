@@ -1,6 +1,7 @@
 ```{r, echo=FALSE}
 library("tidyverse")
 library("lubridate")
+
 ```
 <style>
 .small-code pre code {
@@ -64,7 +65,7 @@ Herd immunity threshold
 ========================================================
 incremental: true
 ```{r, echo=FALSE}
-source("../HIT.R")
+source("../SEIR.R")
 plot_HIT()
 ```
 ***
@@ -220,26 +221,40 @@ SEIR model results
 incremental: true
  
  ```{r, echo=FALSE}
-source("../seir.R")
-seir = simulate_SEIR(R0=2, days=180)
-seir$seir_plot
+N = 60000000
+D = 2.9
+D_pre = 5.2
+delta_t = 0.1
+days = 365
+time_init = 0
+S_init = N-1
+E_init = 0
+I_init = 1
+R_init = 0
+Total_I_init = 0
+
+seir_1_8 = simulate_SEIR(N, R0 = 1.8, D, D_pre, delta_t, days, time_init, S_init, E_init, I_init, R_init, Total_I_init)
+
+plot_SEIR(seir_1_8, N, R0=2.2, D, D_pre, delta_t)
 ```
 ***
  ```{r, echo=FALSE}
-seir = simulate_SEIR(R0=3, days=180)
-seir$seir_plot
+seir_3_2 = simulate_SEIR(N, R0 = 3.2, D, D_pre, delta_t, days, time_init, S_init, E_init, I_init, R_init, Total_I_init)
+
+plot_SEIR(seir_3_2, N, R0=3.2, D, D_pre, delta_t)
 ```
 Flatenning "the curve"
 ========================================================
 incremental: true
  
  ```{r, echo=FALSE}
-source("../seir.R")
-simulate_infection_curve(R0=3, R1=1.7, days=365)
+plot_infection_curves(seir_3_2, seir_1_8, "R0=3.2", "R0=1.8")
 ```
 ***
  ```{r, echo=FALSE}
-simulate_infection_curve(R0=3, R1=1.4, days=365)
+seir_1_5 = simulate_SEIR(N, R0 = 1.5, D, D_pre, delta_t, days, time_init, S_init, E_init, I_init, R_init, Total_I_init)
+
+plot_infection_curves(seir_3_2, seir_1_5, "R0=3.2", "R0=1.5")
 ```
 
 Testing
@@ -253,8 +268,8 @@ incremental: true
  <small>
  - True positives = prevalence * sensitivity
  - False negative = prevalence * (1 - sensitivity)
- - TrueNegative = (1 - prevalence) * specificity
- - FalsePositive = (1 - prevalence) * (1 - specificity)
+ - True Negative = (1 - prevalence) * specificity
+ - False Positive = (1 - prevalence) * (1 - specificity)
  - Positive Predictive Value = True Positive / (True Positive + False Positive)
  - Negative Predictive Value = True Negative / (True Negative + False Negative)
  </small>
@@ -301,7 +316,7 @@ calculate_PPV = function(prevalence, sensitivity, specificity){
 ```{r, eval=TRUE}
 calculate_NPV = function(prevalence, sensitivity, specificity){
         TN = calculate_TN(prevalence, specificity)
-        FN = calculate_FP(prevalence, sensitivity)
+        FN = calculate_FN(prevalence, sensitivity)
         NPV = TN / (TN + FN)
         return(round(NPV * 100, 1))
 }
@@ -338,6 +353,7 @@ type: section
 
 Exponential growth/decay
 ========================================================
+incremental: true
 - When we have exponential growth/decay (constant rate)
 - $\frac{dx}{dt} = k x(t)$
 - $\frac{1}{x(t)}dx = k dt$
@@ -485,7 +501,7 @@ incremental: true
 ```{r, eval=TRUE}
 Td = log(2)/growth_rate_cases
 
-paste0("Time for numbe of cases to double is ",round(Td,1), " days when growth rate is ", round(growth_rate_cases,3))
+paste0("Time for number of cases to double is ",round(Td,1), " days when growth rate is ", round(growth_rate_cases,3))
 ```
 
 How many people will get the disease in the population
@@ -529,3 +545,32 @@ incremental: true
 - $R_{t+1} = R_{t} + rI_{t} + hrH_{t} + crC_{t} - m_{bg}R_{t}$
 - $M_{bg, t+1} = M_{bg, t} + m_{bg}(S_{t} + E_{t} + I_{t} + R_{t} + H_{t} + C_{t})$
 - $M_{excess, t+1} = M_{excess, t} + m_{home}I_{t} + m_{hosp}H_{t} + m_{cc}C_{t}$
+
+What if we had a policy that could reduce R0 for a while
+========================================================
+type: section
+
+
+How might we model a lockdown
+========================================================
+incremental: true
+- number of infections grows in the population
+- after a while e.g. 80 days government decides to lockdown
+- $R_{0}$ drops from 3.2 to lets say 0.6 overnight
+- aftet a while more e.g.60 days government lifts lockdown
+- $R_{0}$ rises from 0.6 back to lets say 3.2 overnight
+- what does this look like in our model
+
+
+Lockdown scenario results
+========================================================
+incremental: true
+ ```{r, echo=FALSE}
+seir_lockdown = supress_release_SEIR(N, R0=3.2, R0_sup=0.6, D, D_pre, D_sup=60, sup_start=80, delta_t, total_days=365)
+
+plot_infection_curves(seir_3_2, seir_lockdown, "Do nothing", "Lockdown")
+```
+***
+ ```{r, echo=FALSE}
+plot_SEIR(seir_lockdown, N, R0=3.2, D, D_pre, delta_t)
+```
