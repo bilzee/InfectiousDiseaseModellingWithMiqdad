@@ -42,12 +42,6 @@ ui = fluidPage(
                         max = 100,
                         value = 2.9,
                         step = 0.1),
-            numericInput("delta_t",
-                        "Time step in the model (dt):",
-                        min = 0,
-                        max = 5,
-                        value = 0.1,
-                        step = 0.1),
             numericInput("R0_sup",
                          HTML("Policy adjusted reproductive number (R<sub>sup</sub>):"),
                          min = 0,
@@ -119,11 +113,10 @@ ui = fluidPage(
 # Define server logic required to draw a histogram
 server = function(input, output) {
     seir_model = reactive({
-        simulate_SEIR(input$N, 
+        simulate_SEIR_differential(input$N, 
                      input$R0, 
                      input$D, 
                      input$D_pre, 
-                     input$delta_t, 
                      input$days)
     })
     
@@ -135,7 +128,6 @@ server = function(input, output) {
                              D_pre = input$D_pre, 
                              D_sup = input$D_sup, 
                              sup_start = input$sup_start, 
-                             delta_t = input$delta_t, 
                              total_days = input$days)
     })
     
@@ -144,8 +136,7 @@ server = function(input, output) {
                            input$N, 
                            input$R0, 
                            input$D, 
-                           input$D_pre, 
-                           input$delta_t))
+                           input$D_pre))
     })
     
     output$seir_sup_plot = renderPlotly({
@@ -153,8 +144,7 @@ server = function(input, output) {
                            input$N, 
                            input$R0, 
                            input$D, 
-                           input$D_pre, 
-                           input$delta_t))
+                           input$D_pre))
     })
     
     output$infection_plot = renderPlotly({
@@ -184,8 +174,8 @@ server = function(input, output) {
         data=tail(seir_model(),1)
         HIT = calculate_HIT(input$R0)
         HIT_date = calculate_HIT_date(seir_model(),input$R0,input$N)
-        f = input$delta_t / input$D_pre
-        r = input$delta_t / input$D
+        f = 1 / input$D_pre
+        r = 1 / input$D
         beta = (input$R0 * r) / input$N 
         paste0("Key derived model parameters: <b>\u03B2</b> = <b>",round(beta,10),"</b>, <b>f</b> = <b>",round(f,5),"</b>, <b>r</b> = <b>", round(r,5), "</b><br><br>",
             "After ", round(data$time), " days:<br>",

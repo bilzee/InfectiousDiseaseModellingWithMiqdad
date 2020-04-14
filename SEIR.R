@@ -6,7 +6,7 @@
 ###################################################################################################
 
 library("tidyverse")
-
+library("deSolve")
 
 # calculate the herd immunity threshold
 calculate_HIT = function(R0){
@@ -44,7 +44,55 @@ plot_HIT = function(){
 }
 
 ##################################################################################################
-# Function to simulate simple SEIR model
+# Function to simulate simple SEIR model using differential equations
+#
+# N = population
+# R0 = basic reproductive number
+# D_pre = average duration of pre-infectious period (days)
+# D = average duration of infectious period (days)
+# days = how many days to run the model for
+# S_init = inital number of people susceptible 
+# E_init = inital number of people pre-infectious 
+# I_init = inital number of people infectious 
+# R_init = inital number of people immune 
+# Total_I_init = inital cumulative number of people infectious
+##################################################################################################
+simulate_SEIR_differential = function(N = 100000, R0 = 2.2, D = 2.9, D_pre = 5.2, days = 150, 
+                              S_init = N-1, E_init = 0, I_init = 1, R_init = 0, Total_I_init = 0) {
+  # start by using inputs to calculate key model prameters
+  f = 1 / D_pre
+  r = 1 / D
+  beta = (R0 * r) / N 
+  
+  # time sequence to produce output for 
+  time = seq(0, days)
+  
+  # parameters
+  parameters = c("r"=r, "f"=f, "beta"=beta)
+  
+  # initial condition
+  initial_state = c("S"=S_init, "E"=E_init, "I"=I_init, "R"=R_init, "Total_I"=Total_I_init)
+  
+  # calculate the value of the derivatives at each time value
+  seir = function(t, state, parameters){
+    with(as.list(c(state, parameters)), {
+      dS = -(beta * I * S)
+      dE = (beta * I * S) - (f * E)   
+      dI = (f * E) - (r * I) 
+      dR = (r * I) 
+      dTotal_I = (f * E)
+      return(list(c(dS, dE, dI, dR, dTotal_I)))
+    })
+  }
+  
+  # run ode to numerically integrate the system of equations
+  markov_trace = ode(y=initial_state, times=time, func=seir, parms=parameters)
+
+  return(as_tibble(markov_trace))
+}
+
+##################################################################################################
+# Function to simulate simple SEIR model using difference equations
 #
 # N = population
 # R0 = basic reproductive number
@@ -53,7 +101,7 @@ plot_HIT = function(){
 # delta_t = time step of model (days)
 # days = how many days to run the model for
 ##################################################################################################
-simulate_SEIR = function(N = 100000, R0 = 2.2, D = 2.9, D_pre = 5.2, delta_t = 0.1, days = 150, 
+simulate_SEIR_difference = function(N = 100000, R0 = 2.2, D = 2.9, D_pre = 5.2, delta_t = 0.1, days = 150, 
                          time_init = 0, S_init = N-1, E_init = 0, I_init = 1, R_init = 0, Total_I_init = 0) {
   
   # start by using inputs to calculate key model prameters
@@ -98,32 +146,49 @@ simulate_SEIR = function(N = 100000, R0 = 2.2, D = 2.9, D_pre = 5.2, delta_t = 0
   return(markov_trace) 
 }
 
-supress_release_SEIR = function(N, R0, R0_sup, D, D_pre, D_sup, sup_start, delta_t, total_days){
+supress_release_SEIR = function(N, R0, R0_sup, D, D_pre, D_sup, sup_start, total_days){
   if(total_days < sup_start + D_sup){
     total_days = sup_start + D_sup
   }
   
   # let disease spread in population initially
-  first_wave = simulate_SEIR(N, R0, D, D_pre, delta_t, days = sup_start, 
-                           time_init = 0, S_init = N-1, E_init = 1, I_init = 0, R_init = 0, Total_I_init = 0)
+  first_wave = simulate_SEIR_differential(N, R0, D, D_pre, 
+                                          days = sup_start, 
+                                          S_init = N-1, 
+                                          E_init = 1, 
+                                          I_init = 0, 
+                                          R_init = 0, 
+                                          Total_I_init = 0)
   
 
   # supress disease after sup_start days for sup_dur days with R0 falling immediately to R0_sup
   initial_values = tail(first_wave, 1)
-  supression_period = simulate_SEIR(N, R0_sup, D, D_pre, delta_t, days = D_sup, 
-                                   time_init = initial_values[["time"]], S_init = initial_values[["S"]], E_init = initial_values[["E"]], I_init = initial_values[["I"]], R_init = initial_values[["R"]], Total_I_init = initial_values[["Total_I"]])
+  supression_period = simulate_SEIR_differential(N, R0_sup, D, D_pre, 
+                                                 days = D_sup, 
+                                                 S_init = initial_values[["S"]], 
+                                                 E_init = initial_values[["E"]], 
+                                                 I_init = initial_values[["I"]], 
+                                                 R_init = initial_values[["R"]], 
+                                                 Total_I_init = initial_values[["Total_I"]])
+  supression_period = supression_period %>% mutate(time=time+sup_start)
   
   # release supression and allow second wave where original R0 applies immediately after sup_start + D_sup days
   initial_values = tail(supression_period, 1)
-  second_wave = simulate_SEIR(N, R0, D, D_pre, delta_t, days = total_days-(sup_start + D_sup), 
-                              time_init = initial_values[["time"]], S_init = initial_values[["S"]], E_init = initial_values[["E"]], I_init = initial_values[["I"]], R_init = initial_values[["R"]], Total_I_init = initial_values[["Total_I"]])
+  second_wave = simulate_SEIR_differential(N, R0, D, D_pre, 
+                                           days = total_days-(sup_start + D_sup), 
+                                           S_init = initial_values[["S"]], 
+                                           E_init = initial_values[["E"]], 
+                                           I_init = initial_values[["I"]], 
+                                           R_init = initial_values[["R"]], 
+                                           Total_I_init = initial_values[["Total_I"]])
+  second_wave = second_wave %>% mutate(time=time+sup_start+D_sup)
   
   markov_trace = bind_rows(first_wave, supression_period, second_wave) %>% distinct()
   
   return(markov_trace)
 }
 
-plot_SEIR = function(markov_trace, N, R0, D, D_pre, delta_t){
+plot_SEIR = function(markov_trace, N, R0, D, D_pre){
   HIT = calculate_HIT(R0)
   HIT_date = calculate_HIT_date(markov_trace, R0, N)
 # reshape the data into tidy form for plotting
@@ -139,7 +204,7 @@ plot_SEIR = function(markov_trace, N, R0, D, D_pre, delta_t){
     ylab("Number of people") +
     geom_line(aes(colour=state, linetype=state), size=1) +
     labs(title = "Simple infectious disease model",
-         subtitle = bquote("Input parameters:" ~ R[0] ~ " = " ~ .(R0) ~ ", D' = " ~ .(D_pre) ~ ", D = " ~ .(D) ~ ", " ~ delta*t ~ " = " ~ .(delta_t) ~ ", N = " ~ .(format(N, big.mark=",")) ),#~ " Derived parameters: " ~ beta ~ " = " ~ .(beta) ~ ", f = " ~ .(f) ~ ", r = " ~ .(r)),
+         subtitle = bquote("Input parameters:" ~ R[0] ~ " = " ~ .(R0) ~ ", D' = " ~ .(D_pre) ~ ", D = " ~ .(D) ~ ", N = " ~ .(format(N, big.mark=",")) ),
          caption = paste0("Herd immunity threshold of ", round(100*HIT) ,"%",ifelse(is.na(HIT_date)," not achieved in this simulation", paste0(" achieved after ",HIT_date," days")))) +
     scale_colour_manual(name="States: ", values=c("red","orange","blue","green")) +
     scale_linetype_manual(name="States: ", values=c(1,2,1,1)) +
@@ -151,35 +216,6 @@ plot_SEIR = function(markov_trace, N, R0, D, D_pre, delta_t){
   
   # return SEIR plot
   return(seir_plot)
-}
-
-simulate_infection_curve = function(N = 100000, R0 = 2.2, R1 = 1.8, D = 2.9, D_pre = 5.2, delta_t = 0.1, days = 150){
-  original = simulate_SEIR (N , R0, D, D_pre, delta_t, days)
-  total_I_original = round(max(original$Total_I))
-  original = original %>% select(time, I) %>% mutate(state="original")
-  adjusted = simulate_SEIR (N , R1, D, D_pre, delta_t, days)
-  total_I_adjusted = round(max(adjusted$Total_I))
-  adjusted = adjusted %>% select(time, I) %>% mutate(state="adjusted")
-  
-  graph_data = bind_rows(original, adjusted) %>%
-    mutate(state = factor(state,c("original","adjusted"),c("Baseline infections","Adjusted infections")))
- 
-  # plot the infection curve graph
-  infection_plot = ggplot(graph_data, aes(x=time, y=I, group=state)) +
-    xlab("Time (days since first case)") +
-    ylab("Number of people") +
-    geom_line(aes(colour=state, linetype=state), size=1) +
-    labs(title = paste0("Infected over time - total baseline: ",total_I_original,"; total adjusted: ", total_I_adjusted),
-         subtitle = paste0("R0 - baseline: ", R0, "; adjusted: ",R1 )) +
-    scale_colour_manual(name="Scenarios: ", values=c("blue","blue")) +
-    scale_linetype_manual(name="Scenarios: ", values=c(1,2)) +
-    theme_bw(base_size = 10) + 
-    theme(panel.grid.major = element_blank(), 
-          panel.grid.minor = element_blank(), 
-          plot.margin = unit(c(1, 1, 1, 1), "lines"),
-          legend.position = "bottom")
-  
-  return(infection_plot)
 }
 
 plot_infection_curves = function(markov_trace_1, markov_trace_2, label_1, label_2){

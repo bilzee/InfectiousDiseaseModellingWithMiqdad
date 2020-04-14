@@ -219,30 +219,28 @@ Iterate over difference equations to run model
 SEIR model results
 ========================================================
 incremental: true
- 
  ```{r, echo=FALSE}
 N = 60000000
 D = 2.9
 D_pre = 5.2
-delta_t = 0.1
 days = 365
-time_init = 0
 S_init = N-1
 E_init = 0
 I_init = 1
 R_init = 0
 Total_I_init = 0
 
-seir_1_8 = simulate_SEIR(N, R0 = 1.8, D, D_pre, delta_t, days, time_init, S_init, E_init, I_init, R_init, Total_I_init)
+seir_1_8 = simulate_SEIR_differential(N, R0 = 1.8, D, D_pre, days, S_init, E_init, I_init, R_init, Total_I_init)
 
-plot_SEIR(seir_1_8, N, R0=2.2, D, D_pre, delta_t)
+plot_SEIR(seir_1_8, N, R0=2.2, D, D_pre)
 ```
 ***
  ```{r, echo=FALSE}
-seir_3_2 = simulate_SEIR(N, R0 = 3.2, D, D_pre, delta_t, days, time_init, S_init, E_init, I_init, R_init, Total_I_init)
+seir_3_2 = simulate_SEIR_differential(N, R0 = 3.2, D, D_pre, days, S_init, E_init, I_init, R_init, Total_I_init)
 
-plot_SEIR(seir_3_2, N, R0=3.2, D, D_pre, delta_t)
+plot_SEIR(seir_3_2, N, R0=3.2, D, D_pre)
 ```
+
 Flatenning "the curve"
 ========================================================
 incremental: true
@@ -252,7 +250,7 @@ plot_infection_curves(seir_3_2, seir_1_8, "R0=3.2", "R0=1.8")
 ```
 ***
  ```{r, echo=FALSE}
-seir_1_5 = simulate_SEIR(N, R0 = 1.5, D, D_pre, delta_t, days, time_init, S_init, E_init, I_init, R_init, Total_I_init)
+seir_1_5 = simulate_SEIR_differential(N, R0 = 1.5, D, D_pre, days, S_init, E_init, I_init, R_init, Total_I_init)
 
 plot_infection_curves(seir_3_2, seir_1_5, "R0=3.2", "R0=1.5")
 ```
@@ -371,6 +369,40 @@ incremental: true
 - $\frac{dI(t)}{dt} = fE(t) - rI(t)$
 - $\frac{dR(t)}{dt} = rI(t)$
 
+SEIR model using differential equations in R
+========================================================
+class: small-code
+incremental: true
+ ```{r, eval=FALSE}
+  # start by using inputs to calculate key model prameters
+  f = 1 / D_pre
+  r = 1 / D
+  beta = (R0 * r) / N 
+  
+  # time sequence to produce output for 
+  time = seq(0, days)
+  
+  # parameters
+  parameters = c("r"=r, "f"=f, "beta"=beta)
+  
+  # initial condition
+  initial_state = c("S"=S_init, "E"=E_init, "I"=I_init, "R"=R_init, "Total_I"=Total_I_init)
+  
+  # calculate the value of the derivatives at each time value
+  seir = function(t, state, parameters){
+    with(as.list(c(state, parameters)), {
+      dS = -(beta * I * S)
+      dE = (beta * I * S) - (f * E)   
+      dI = (f * E) - (r * I) 
+      dR = (r * I) 
+      dTotal_I = (f * E)
+      return(list(c(dS, dE, dI, dR, dTotal_I)))
+    })
+  }
+  
+  # run ode to numerically integrate the system of equations
+  markov_trace = ode(y=initial_state, times=time, func=seir, parms=parameters)
+```
 
 More on R0
 ========================================================
@@ -566,11 +598,11 @@ Lockdown scenario results
 ========================================================
 incremental: true
  ```{r, echo=FALSE}
-seir_lockdown = supress_release_SEIR(N, R0=3.2, R0_sup=0.6, D, D_pre, D_sup=60, sup_start=80, delta_t, total_days=365)
+seir_lockdown = supress_release_SEIR(N, R0=3.2, R0_sup=0.6, D, D_pre, D_sup=60, sup_start=80, total_days=365)
 
 plot_infection_curves(seir_3_2, seir_lockdown, "Do nothing", "Lockdown")
 ```
 ***
  ```{r, echo=FALSE}
-plot_SEIR(seir_lockdown, N, R0=3.2, D, D_pre, delta_t)
+plot_SEIR(seir_lockdown, N, R0=3.2, D, D_pre)
 ```
