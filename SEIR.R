@@ -146,7 +146,7 @@ simulate_SEIR_difference = function(N = 100000, R0 = 2.2, D = 2.9, D_pre = 5.2, 
   return(markov_trace) 
 }
 
-supress_release_SEIR = function(N, R0, R0_sup, D, D_pre, D_sup, sup_start, total_days){
+suppress_release_SEIR = function(N, R0, R0_sup, D, D_pre, D_sup, sup_start, total_days){
   if(total_days < sup_start + D_sup){
     total_days = sup_start + D_sup
   }
@@ -161,19 +161,19 @@ supress_release_SEIR = function(N, R0, R0_sup, D, D_pre, D_sup, sup_start, total
                                           Total_I_init = 0)
   
 
-  # supress disease after sup_start days for sup_dur days with R0 falling immediately to R0_sup
+  # suppress disease after sup_start days for sup_dur days with R0 falling immediately to R0_sup
   initial_values = tail(first_wave, 1)
-  supression_period = simulate_SEIR_differential(N, R0_sup, D, D_pre, 
+  suppression_period = simulate_SEIR_differential(N, R0_sup, D, D_pre, 
                                                  days = D_sup, 
                                                  S_init = initial_values[["S"]], 
                                                  E_init = initial_values[["E"]], 
                                                  I_init = initial_values[["I"]], 
                                                  R_init = initial_values[["R"]], 
                                                  Total_I_init = initial_values[["Total_I"]])
-  supression_period = supression_period %>% mutate(time=time+sup_start)
+  suppression_period = suppression_period %>% mutate(time=time+sup_start)
   
-  # release supression and allow second wave where original R0 applies immediately after sup_start + D_sup days
-  initial_values = tail(supression_period, 1)
+  # release suppression and allow second wave where original R0 applies immediately after sup_start + D_sup days
+  initial_values = tail(suppression_period, 1)
   second_wave = simulate_SEIR_differential(N, R0, D, D_pre, 
                                            days = total_days-(sup_start + D_sup), 
                                            S_init = initial_values[["S"]], 
@@ -183,7 +183,7 @@ supress_release_SEIR = function(N, R0, R0_sup, D, D_pre, D_sup, sup_start, total
                                            Total_I_init = initial_values[["Total_I"]])
   second_wave = second_wave %>% mutate(time=time+sup_start+D_sup)
   
-  markov_trace = bind_rows(first_wave, supression_period, second_wave) %>% distinct()
+  markov_trace = suppressWarnings(bind_rows(first_wave, suppression_period, second_wave) %>% distinct())
   
   return(markov_trace)
 }
@@ -226,8 +226,8 @@ plot_infection_curves = function(markov_trace_1, markov_trace_2, label_1, label_
   infections_2 = markov_trace_2 %>% select(time, I) %>% mutate(state=label_2)
   peak_infections_2 = round(max(infections_2$I))
   
-  graph_data = bind_rows(infections_1, infections_2) %>%
-    mutate(state = factor(state,c(label_1,label_2),c(label_1,label_2)))
+  graph_data = suppressWarnings(bind_rows(infections_1, infections_2)) %>%
+    mutate(state = factor(state,c(label_1,label_2),c(label_1,label_2))) 
   
   # plot the infection curve graph
   infection_plot = ggplot(graph_data, aes(x=time, y=I, group=state)) +
