@@ -75,7 +75,7 @@ plot_cases_and_deaths = function(moving_average_days, deaths_cut_off, countries)
     geom_smooth(size=1) +
     xlab(paste0("days from ",deaths_cut_off," deaths")) +
     ylab(paste0(moving_average_days," day moving average (log scale)")) +
-    facet_grid(.~variable, scales="free") +
+    facet_wrap(.~variable, scales="free") +
     labs(
       title = "COVID-19 deaths and cases over time",
       subtitle = "Measured in logs",

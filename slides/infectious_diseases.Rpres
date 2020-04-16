@@ -557,6 +557,17 @@ paste0(round(100*sf,1), "% of population susceptible at the end i.e. ",
        (round(100*(1-sf),1)), "% of population infected overall")
 ```
 
+Are growth rates the same around the world?
+========================================================
+```{r, echo=FALSE}
+source("../cases_and_deaths_plot.R")
+plot_cases_and_deaths(moving_average_days = 7, deaths_cut_off = 3, countries = c("CN","UK","IT","US","IR","ES"))
+```
+***
+```{r, echo=FALSE}
+plot_cases_and_deaths(moving_average_days = 2, deaths_cut_off = 1, countries = c("IN","NG","ZA","TR","SY"))
+```
+
 Adding in hospitalisation and mortality
 ========================================================
 type: section
@@ -598,7 +609,7 @@ Lockdown scenario results
 ========================================================
 incremental: true
  ```{r, echo=FALSE}
-seir_lockdown = supress_release_SEIR(N, R0=3.2, R0_sup=0.6, D, D_pre, D_sup=60, sup_start=80, total_days=365)
+seir_lockdown = suppress_release_SEIR(N, R0=3.2, R0_sup=0.6, D, D_pre, D_sup=60, sup_start=80, total_days=365)
 
 plot_infection_curves(seir_3_2, seir_lockdown, "Do nothing", "Lockdown")
 ```

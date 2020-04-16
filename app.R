@@ -123,7 +123,7 @@ ui = fluidPage(
                         tabPanel("SEIR Plot (do nothing)", plotlyOutput("seir_plot"), 
                                  htmlOutput("summary")),
                         #tabPanel("Markov Trace (do nothing)", div(dataTableOutput("seir_markov_trace"), style = "font-size:70%")),
-                        tabPanel("Cases and deaths", plotOutput("cases_and_death_plot")),
+                        tabPanel("Cases & Deaths", plotOutput("cases_and_death_plot")),
                         tabPanel("Tests", plotlyOutput("test_plot")),
                         tabPanel("HIT", plotlyOutput("hit_plot"))
             )
