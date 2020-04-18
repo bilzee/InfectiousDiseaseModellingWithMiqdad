@@ -503,7 +503,7 @@ incremental: true
 - $\Lambda = (\beta N - r)$ is the growth rate
 - $R_{0} = \frac{\beta N}{r} \implies \Lambda = r (R_{0} - 1)$
 - $D = \frac{1}{r} \implies r = \frac{1}{D} \implies \Lambda = \frac{R_{0} - 1}{D}$
-- $R_{0} = 1 + \Lambda D$ when $D'$ is small
+- $R_{0} = 1 + \Lambda D$ when $D'$ is small i.e. pre-infectious period ignored
 - more generally gamma(m,n): $R_{0} = \frac{\Lambda D (\frac{\Lambda D'}{m} +1)^m}{(1-(\frac{\Lambda D}{n}+1)^{-n})}$ 
 - if m = n = 1 then simplifies to exponential: $R_{0} = (1 + \Lambda D)(1 + \Lambda D')$
 
@@ -570,11 +570,6 @@ plot_cases_and_deaths(moving_average_days = 7, deaths_cut_off = 3, countries = c
 plot_cases_and_deaths(moving_average_days = 2, deaths_cut_off = 1, countries = c("IN","NG","ZA","TR","SY"))
 ```
 
-Adding in hospitalisation and mortality
-========================================================
-type: section
-
-
 What if we had a policy that could reduce R0 for a while
 ========================================================
 type: section
@@ -603,6 +598,11 @@ plot_infection_curves(seir_3_2, seir_lockdown, "Do nothing", "Lockdown")
  ```{r, echo=FALSE}
 plot_SEIR(seir_lockdown, N, R0=3.2, D, D_pre)
 ```
+
+
+Adding in hospitalisation and mortality
+========================================================
+type: section
 
 Model diagram including hospitalisation and mortality
 ========================================================
