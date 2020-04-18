@@ -91,6 +91,16 @@ simulate_SEIR_differential = function(N = 100000, R0 = 2.2, D = 2.9, D_pre = 5.2
   return(as_tibble(markov_trace))
 }
 
+probability_to_rate = function(p,t){
+  r = -log(1-p)/t
+  return(r)
+}
+
+rate_to_probability = function(r,t){
+  p = 1-exp(-r*t)
+  return(p)
+}
+
 ##################################################################################################
 # Function to simulate simple SEIR model using difference equations
 #

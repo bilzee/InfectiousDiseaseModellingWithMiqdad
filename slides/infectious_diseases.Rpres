@@ -364,6 +364,8 @@ incremental: true
 SEIR model using differential equations
 ========================================================
 incremental: true
+![seir](figures/seir_2.png)
+
 - $\frac{dS(t)}{dt} = -\lambda(t)S(t)$
 - $\frac{dE(t)}{dt} = \lambda(t)S(t) - fE(t)$
 - $\frac{dI(t)}{dt} = fE(t) - rI(t)$
@@ -573,22 +575,6 @@ Adding in hospitalisation and mortality
 type: section
 
 
-Model diagram including hospitalisation and mortality
-========================================================
-![seir_hosp](figures/augmented_seir.png)
-
-Model equations including hospitalisation and mortality
-========================================================
-incremental: true
-- $S_{t+1} = S_{t} - \lambda_{t}S_{t} - m_{bg}S_{t}$
-- $E_{t+1} = E_{t} + \lambda_{t}S_{t} - fE_{t} - m_{bg}S_{t}$
-- $I_{t+1} = I_{t} + fE_{t} - rI_{t} - hI_{t} - (m_{bg} + m_{home})I_{t}$
-- $H_{t+1} = H_{t} + hI_{t} - hcH_{t} - hrH_{t} - (m_{bg} + m_{hosp})H_{t}$
-- $C_{t+1} = C_{t} + hcH_{t} - crC_{t} - (m_{bg} + m_{cc})C_{t}$
-- $R_{t+1} = R_{t} + rI_{t} + hrH_{t} + crC_{t} - m_{bg}R_{t}$
-- $M_{bg, t+1} = M_{bg, t} + m_{bg}(S_{t} + E_{t} + I_{t} + R_{t} + H_{t} + C_{t})$
-- $M_{excess, t+1} = M_{excess, t} + m_{home}I_{t} + m_{hosp}H_{t} + m_{cc}C_{t}$
-
 What if we had a policy that could reduce R0 for a while
 ========================================================
 type: section
@@ -617,3 +603,20 @@ plot_infection_curves(seir_3_2, seir_lockdown, "Do nothing", "Lockdown")
  ```{r, echo=FALSE}
 plot_SEIR(seir_lockdown, N, R0=3.2, D, D_pre)
 ```
+
+Model diagram including hospitalisation and mortality
+========================================================
+![seir_hosp](figures/augmented_seir.png)
+
+Model equations including hospitalisation and mortality
+========================================================
+incremental: true
+- $S_{t+1} = S_{t} - \lambda_{t}S_{t} - m_{bg}S_{t}$
+- $E_{t+1} = E_{t} + \lambda_{t}S_{t} - fE_{t} - m_{bg}S_{t}$
+- $I_{t+1} = I_{t} + fE_{t} - rI_{t} - hI_{t} - (m_{bg} + m_{home})I_{t}$
+- $H_{t+1} = H_{t} + hI_{t} - hcH_{t} - hrH_{t} - (m_{bg} + m_{hosp})H_{t}$
+- $C_{t+1} = C_{t} + hcH_{t} - crC_{t} - (m_{bg} + m_{cc})C_{t}$
+- $R_{t+1} = R_{t} + rI_{t} + hrH_{t} + crC_{t} - m_{bg}R_{t}$
+- $M_{bg, t+1} = M_{bg, t} + m_{bg}(S_{t} + E_{t} + I_{t} + R_{t} + H_{t} + C_{t})$
+- $M_{excess, t+1} = M_{excess, t} + m_{home}I_{t} + m_{hosp}H_{t} + m_{cc}C_{t}$
+
